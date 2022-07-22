@@ -1308,7 +1308,7 @@ function save_intent($raw_intent)
         $abs_params = abs_file($params);
         $abs_intent = str_replace($params, $abs_params, $raw_intent);
         return "casper.then(function() {" .
-            call_sikuli($abs_intent, $abs_param1, "save_text('',fetch_sikuli_text()); clear_sikuli_text();");
+            call_sikuli($abs_intent, $abs_params, "save_text('',fetch_sikuli_text()); clear_sikuli_text();");
     }
     if ((strtolower($params) == "page") or (strtolower($param1) == "page")) {
         if (strpos($params, " to ") !== false)
