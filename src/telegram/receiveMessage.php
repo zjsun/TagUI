@@ -20,7 +20,8 @@ try {
     $chat_id = $post_data['message']['chat']['id'];
     $message = $post_data['message']['text'];
 } catch (Exception $e) {
-    $chat_id = ""; $message = "";
+    $chat_id = "";
+    $message = "";
     die("ERROR - cannot find both chat_id and message");
 }
 
@@ -38,6 +39,8 @@ file_put_contents("../../telegram/receiveMessage.log", $log_entry, FILE_APPEND);
 $message = "Your Telegram ID is `" . $chat_id . "`\n\nTo send message in TagUI RPA \-\n\n`telegram id message`";
 
 // call sendMessage.php to send chat_id to user
-$_GET['chat_id'] = $chat_id; $_GET['text'] = $message; require 'sendMessage.php';
+$_GET['chat_id'] = $chat_id;
+$_GET['text'] = $message;
+require 'sendMessage.php';
 
 ?>

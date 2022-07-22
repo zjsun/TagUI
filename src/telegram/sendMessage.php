@@ -46,8 +46,8 @@ else
 // build the URL query options
 $post_options = array('http' =>
     array(
-        'method'  => 'POST',
-        'header'  => 'Content-Type: application/x-www-form-urlencoded',
+        'method' => 'POST',
+        'header' => 'Content-Type: application/x-www-form-urlencoded',
         'content' => $post_data,
         'ignore_errors' => true
     )
