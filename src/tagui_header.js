@@ -114,6 +114,18 @@ var inside_vision_block = 0;
 var inside_js_block = 0;
 var inside_dom_block = 0;
 
+function decodeUnicode(str) {
+    return unescape(str.replace(/\\u/gi, '%u'));
+}
+
+function encodeUnicode(str) {
+    var res = [];
+    for (var i = 0; i < str.length; i++) {
+        res[i] = ("00" + str.charCodeAt(i).toString(16)).slice(-4);
+    }
+    return  "\\u" + res.join("\\u");
+}
+
 // determine how many casper.then steps to skip
 function teleport_distance(teleport_marker) {
     number_to_hop = 0;
@@ -1362,11 +1374,15 @@ if (chrome_id > 0) { // super large if block to load chrome related functions if
             chrome_result = fs.read('tagui_chrome.out').trim();
         }
         while (chrome_result.indexOf('[' + chrome_id.toString() + '] ') == -1);
-        if (chrome_targetid == '') return chrome_result.substring(chrome_result.indexOf('] ') + 2); // below for handling popup
+        if (chrome_targetid == '')
+            return chrome_result.substring(chrome_result.indexOf('] ') + 2); // below for handling popup
         else {
             try {
                 var raw_json_string = JSON.stringify(JSON.parse(chrome_result.substring(chrome_result.indexOf('] ') + 2)).params.message);
-                return raw_json_string.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\n/g, "\\n");
+                return raw_json_string.slice(1, -1)
+                    .replace(/\\"/g, '"')
+                    .replace(/\\\\"/g, '\\"') // fixed: 没处理干净
+                    .replace(/\\\\n/g, "\\n");
             } catch (e) {
                 return '';
             }
@@ -1591,8 +1607,10 @@ chrome_step('Runtime.evaluate',{expression: chrome_context+'.querySelector(\''+s
         } else var ws_message = chrome_step('Runtime.evaluate', {expression: chrome_context + '.querySelector(\'' + selector + '\').textContent || ' + chrome_context + '.querySelector(\'' + selector + '\').innerText || ' + chrome_context + '.querySelector(\'' + selector + '\').value || \'\''});
         try {
             var ws_json = JSON.parse(ws_message);
-            if (ws_json.result.result.value)
-                return ws_json.result.result.value; else return '';
+            if (ws_json.result.result.value) {
+                // todo: 在popup中取到的是中文unicode
+                return decodeUnicode(ws_json.result.result.value);
+            } else return '';
         } catch (e) {
             return '';
         }
@@ -1703,18 +1721,23 @@ casper.thenOpen('about:blank');});}; // reset phantomjs browser state */
         if ((selector.toString().length >= 16) && (selector.toString().substr(0, 16) == 'xpath selector: ')) {
             casper.echo('ERROR - upload step is only implemented for CSS selector and not XPath selector');
             casper.echo('ERROR - for consistency with PhantomJS as it only supports upload with CSS selector');
-        } else try {
-            var ws_message = "";
-            var ws_json = {};
-            ws_message = chrome_step('DOM.getDocument', {});
-            ws_json = JSON.parse(ws_message);
-            ws_message = chrome_step('DOM.querySelector', {nodeId: ws_json.result.root.nodeId, selector: selector});
-            ws_json = JSON.parse(ws_message);
-            ws_message = chrome_step('DOM.setFileInputFiles', {files: [filename], nodeId: ws_json.result.nodeId});
-            ws_json = JSON.parse(ws_message);
-            ws_message = chrome_step('DOM.disable'); // disable invoked DOM agent from running and firing events
-        } catch (e) {
-            casper.echo('ERROR - unable to upload ' + selector + ' as ' + filename);
+        } else {
+            try {
+                var ws_message = "";
+                var ws_json = {};
+                ws_message = chrome_step('DOM.getDocument', {});
+                ws_json = JSON.parse(ws_message);
+                ws_message = chrome_step('DOM.querySelector', {nodeId: ws_json.result.root.nodeId, selector: selector});
+                ws_json = JSON.parse(ws_message);
+                if (!ws_json.result) { // todo: popup中返回setChildNodes？？
+                    throw new Error('非预期结果：' + ws_message);
+                }
+                ws_message = chrome_step('DOM.setFileInputFiles', {files: [filename], nodeId: ws_json.result.nodeId});
+                ws_json = JSON.parse(ws_message);
+                ws_message = chrome_step('DOM.disable'); // disable invoked DOM agent from running and firing events
+            } catch (e) {
+                casper.echo('ERROR - unable to upload ' + selector + ' as ' + filename + ' [' + e.message + ']');
+            }
         }
     };
 
