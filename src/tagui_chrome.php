@@ -74,7 +74,9 @@ while (true) {
 
 // ignore irrelevant DOM.setChildNodes events received when using DOM.querySelector to get NodeId for upload step
 // and ignore DOM. events received after using DOM.setFileInputFiles in upload step, before DOM.disable kicks in
-    while (strpos($intent_result_string, '{"method":"DOM.') !== false) {
+    while (strpos($intent_result_string, '{"method":"DOM.') !== false
+        // fixed: popup时会有转义符
+        || strpos($intent_result_string, '{\"method\":\"DOM.') !== false) {
         $intent_result_string = trim($client->receive());
     }
 

@@ -1608,7 +1608,7 @@ chrome_step('Runtime.evaluate',{expression: chrome_context+'.querySelector(\''+s
         try {
             var ws_json = JSON.parse(ws_message);
             if (ws_json.result.result.value) {
-                // todo: 在popup中取到的是中文unicode
+                // fixed: 在popup中取到的是中文unicode
                 return decodeUnicode(ws_json.result.result.value);
             } else return '';
         } catch (e) {
@@ -1729,9 +1729,6 @@ casper.thenOpen('about:blank');});}; // reset phantomjs browser state */
                 ws_json = JSON.parse(ws_message);
                 ws_message = chrome_step('DOM.querySelector', {nodeId: ws_json.result.root.nodeId, selector: selector});
                 ws_json = JSON.parse(ws_message);
-                if (!ws_json.result) { // todo: popup中返回setChildNodes？？
-                    throw new Error('非预期结果：' + ws_message);
-                }
                 ws_message = chrome_step('DOM.setFileInputFiles', {files: [filename], nodeId: ws_json.result.nodeId});
                 ws_json = JSON.parse(ws_message);
                 ws_message = chrome_step('DOM.disable'); // disable invoked DOM agent from running and firing events
